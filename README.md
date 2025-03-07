@@ -1,5 +1,15 @@
 # Artificial App
 
+## Run
+
+1. Get a Google Gemini API key
+   - https://aistudio.google.com/app/apikey
+2. Create `.env` file
+3. Add `GEMINI_API_KEY` to `.env`
+4. `cargo run`
+
+## Example API Responses
+
 ```bash
 curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY" \
 -H 'Content-Type: application/json' \
@@ -9,41 +19,56 @@ curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:g
     "parts":[{"text": "Explain how AI works"}]
     }]
    }'
+```
 
-"system_instruction": { "parts": { "text": "" } }
-
-"contents": [{
-           "parts":[
-               {"text": "Write a story about a magic backpack."}
-           ]
-       }],
-       "safetySettings": [
-           {
-               "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-               "threshold": "BLOCK_ONLY_HIGH"
-           }
-       ],
-       "generationConfig": {
-           "stopSequences": [
-               "Title"
-           ],
-           "temperature": 1.0,
-           "maxOutputTokens": 800,
-           "topP": 0.8,
-           "topK": 10
-       }
-
-      "contents": [
-       {"role":"user",
-        "parts":[{
-          "text": "Hello"}]},
-       {"role": "model",
-        "parts":[{
-          "text": "Great to meet you. What would you like to know?"}]},
-       {"role":"user",
-        "parts":[{
-          "text": "I have two dogs in my house. How many paws are in my house?"}]},
-     ]
+```json
+{
+  "system_instruction": { "parts": { "text": "" } },
+  "contents": [
+    {
+      "parts": [{ "text": "Write a story about a magic backpack." }]
+    }
+  ],
+  "safetySettings": [
+    {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "BLOCK_ONLY_HIGH"
+    }
+  ],
+  "generationConfig": {
+    "stopSequences": ["Title"],
+    "temperature": 1.0,
+    "maxOutputTokens": 800,
+    "topP": 0.8,
+    "topK": 10
+  },
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Hello"
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "text": "Great to meet you. What would you like to know?"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "I have two dogs in my house. How many paws are in my house?"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 Response

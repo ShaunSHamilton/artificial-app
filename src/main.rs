@@ -203,8 +203,6 @@ async fn call_gemini_api(
         api_key
     );
 
-    println!("{:#?}", prompt.contents);
-
     let prompt: String = serde_json::to_string(prompt).unwrap();
     let response = client.post(&url).body(prompt).send().await.map_err(|e| {
         (
