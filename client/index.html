@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artificial App</title>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        padding: 1rem;
+        background-color: black;
+        color: whitesmoke;
+      }
+
+      header > h1 {
+        margin: 0;
+      }
+
+      main {
+        padding: 1rem;
+      }
+
+      header > input {
+        padding: 0.5rem;
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <label>
+        <input id="api-token" type="text" placeholder="Gemini API Token" />
+      </label>
+      <button id="submit-api-token" onclick="setApiToken()">Save</button>
+
+      <h1>Artificial App</h1>
+    </header>
+    <main></main>
+  </body>
+  <script>
+    window.onload = () => {
+      setHistory([]);
+      const apiToken = getApiToken();
+      if (apiToken) {
+        handleInitialPrompt();
+      }
+
+      const inputEl = document.getElementById("api-token");
+      inputEl.value = apiToken;
+    };
+    // Get api token, store in local storage, use in app
+    async function handleInteraction(context) {
+      const history = getHistory();
+      history.push({
+        parts: [{ text: context }],
+        role: "user",
+      });
+
+      const prompt = createPrompt(history);
+
+      const response = await callGeminiApi(prompt);
+      const html = response.candidates[0].content.parts[0].text;
+
+      const htmlSansCodeblocks = formatHtml(html);
+
+      history.push({
+        parts: [{ text: htmlSansCodeblocks }],
+        role: "model",
+      });
+
+      setHistory(history);
+
+      renderHtml(htmlSansCodeblocks);
+    }
+
+    async function callGeminiApi(prompt) {
+      const apiToken = getApiToken();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiToken}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(prompt),
+      });
+
+      const data = await response.json();
+      console.log(data);
+      return data;
+    }
+    function getHistory() {
+      return JSON.parse(localStorage.getItem("history")) || [];
+    }
+
+    function setHistory(history) {
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+
+    function getApiToken() {
+      return localStorage.getItem("api-token");
+    }
+
+    function setApiToken() {
+      const inputEl = document.getElementById("api-token");
+      const apiToken = inputEl.value;
+      // TODO: Validation
+      localStorage.setItem("api-token", apiToken);
+      handleInitialPrompt();
+    }
+
+    function renderHtml(html) {
+      const mainEl = document.querySelector("main");
+      mainEl.innerHTML = html;
+    }
+
+    function formatHtml(html) {
+      const htmlLines = html.split("\n");
+      const htmlSansCodeblocks = htmlLines
+        .slice(1, htmlLines.length - 1)
+        .join("\n");
+
+      return htmlSansCodeblocks;
+    }
+
+    async function handleInitialPrompt() {
+      const history = getHistory();
+      history.push({
+        parts: [
+          {
+            text: "Start by responding with an educational webpage which teaches A2-level English in an interactive way. Ensure the UI is modern.",
+          },
+        ],
+        role: "user",
+      });
+      const prompt = createPrompt(history);
+      const response = await callGeminiApi(prompt);
+      const html = response.candidates[0].content.parts[0].text;
+
+      const htmlSansCodeblocks = formatHtml(html);
+
+      history.push({
+        parts: [{ text: htmlSansCodeblocks }],
+        role: "model",
+      });
+
+      setHistory(history);
+
+      renderHtml(htmlSansCodeblocks);
+    }
+
+    function createPrompt(history) {
+      return {
+        systemInstruction: {
+          parts: [
+            {
+              text: getSystemPrompt(),
+            },
+          ],
+        },
+        contents: history,
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_ONLY_HIGH",
+          },
+        ],
+      };
+    }
+
+    function getSystemPrompt() {
+      return `You are only allowed to respond with valid HTML text which will be rendered inside a \`main\` element.
+
+Every input/reply from the user is in some way related to an interaction with a webpage.
+You are responding with updates to that webpage.
+
+Any interactive elements in your HTML response should have unique IDs such that, when they are interacted with, you will be able to identify what and how the webpage was interacted.
+
+Any interaction with the webpage should cause a call to the \`handleInteraction\` function (which is global) with an argument of \`context\` which is a JSON string holding all the context necessary for you to handle the interactivity.
+For example, if there is a page with a text input and a submit button, clicking the submit button should call \`handleInteraction({button_id: <BUTTON_ID>, input: { id: <INPUT_ID>, text: <INPUT_TEXT>}})\`.
+Be careful to not cause effects on changes to input elements. Instead, all interactivity should be done through classic forms with submit buttons.
+
+For any action which causes \`handleInteraction\` to be called, there should be a loading animation displayed on the page until the response is received.
+
+The first reply from the user will be a prompt with a description of a webpage to render.
+
+All replies thereafter will be the element IDs. You should reply with a new webpage following the context of the previous replies as though the user were navigating one website.
+
+Specifically, ensure you keep the same webpage theme. Also, always respond with more interactive elements - there should never be a situation where a page has 0 interactive elements.
+`;
+    }
+  </script>
+</html>
